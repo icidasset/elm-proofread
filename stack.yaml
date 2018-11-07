@@ -1,0 +1,2 @@
+resolver: lts-12.16
+extra-deps: [ pretty-terminal-0.1.0.0 ]

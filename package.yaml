@@ -1,0 +1,47 @@
+name: elm-proofread
+version: 0.1.0
+synopsis: Elm documentation testing.
+description: See README at <https://github.com/icidasset/elm-proofread#readme>
+maintainer: Steven Vandevelde <icid.asset@gmail.com>
+license: MIT
+github: icidasset/elm-proofread
+category: Development
+
+
+default-extensions:
+  DisambiguateRecordFields
+  DuplicateRecordFields
+  NoImplicitPrelude
+  OverloadedStrings
+
+
+ghc-options:
+  -Wall
+  -Wcompat
+  -Wincomplete-record-updates
+  -Wincomplete-uni-patterns
+  -Wredundant-constraints
+
+
+dependencies:
+  - base >= 4.7 && < 5
+  - flow == 1.*
+  - megaparsec == 6.5.*
+  - parser-combinators == 1.*
+  - pretty-terminal
+  - protolude == 0.2.*
+  - text == 1.*
+
+
+library:
+  source-dirs: src
+  exposed-modules:
+    Proofread
+
+
+executables:
+  elm-proofread:
+    main: Main.hs
+    source-dirs: bin
+    dependencies:
+      - elm-proofread
