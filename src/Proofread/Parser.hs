@@ -6,7 +6,6 @@ PARSER
 -}
 module Proofread.Parser
     ( Proofread.Parser.parse
-    , Result(..)
     ) where
 
 import Control.Monad.Combinators
@@ -24,25 +23,22 @@ import qualified Data.Text as Text
 import qualified Text.Megaparsec as Mega
 
 
--- 🌳
-
-
-data Result
-    = Ok Document
-    | Err Text
-    deriving (Show)
-
-
-
 -- ⚡️
 
 
-parse :: Text -> Result
+parse :: Text -> Result Document Text
 parse contents =
+    let
+        success =
+            Ok
+
+        failure =
+            parseErrorPretty .> Text.pack .> Text.append "Parse error: " .> Err
+    in
     contents
         |> Text.unpack
         |> Mega.parse document ""
-        |> either (parseErrorPretty .> Text.pack .> Err) Ok
+        |> either failure success
 
 
 
@@ -82,7 +78,6 @@ test =
     try (skipManyTill anyChar testInMultiLineComment)
 
 
-
 {-| Parser for a test in a multiline comment.
 -}
 testInMultiLineComment :: Parser Test
@@ -100,8 +95,8 @@ testInMultiLineComment = do
                 |> List.concat
                 |> Text.pack
 
-        , output =
-            Text.pack expectedOutput
+        , expectedOutput = Text.pack expectedOutput
+        , state = NotFulfilled
         }
 
 

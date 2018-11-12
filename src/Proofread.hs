@@ -17,26 +17,18 @@ import Protolude
 
 import qualified Data.Text as Text
 import qualified Proofread.Parser as Parser
-
-
--- 🌳
-
-
-data Result
-    = Ok Document
-    | Err Text
-    deriving (Show)
-
+import qualified Proofread.Runner as Runner
 
 
 -- 📮
 
 
-proofread :: Text -> Result
+proofread :: Text -> IO (Result Document Text)
 proofread contents =
     case Parser.parse contents of
-        Parser.Ok document ->
-            Ok document
-
-        Parser.Err err ->
-            Err err
+        Ok document -> Runner.run document >>=
+                        (\doc -> do
+                            print (show doc :: [Char])
+                            return doc
+                        )
+        Err err     -> return (Err err)

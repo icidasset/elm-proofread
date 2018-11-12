@@ -11,8 +11,11 @@ category: Development
 default-extensions:
   DisambiguateRecordFields
   DuplicateRecordFields
+  NamedFieldPuns
   NoImplicitPrelude
   OverloadedStrings
+  RecordWildCards
+  StandaloneDeriving
 
 
 ghc-options:
@@ -29,8 +32,10 @@ dependencies:
   - megaparsec == 6.5.*
   - parser-combinators == 1.*
   - pretty-terminal
+  - process == 1.*
   - protolude == 0.2.*
   - text == 1.*
+  - typed-process == 0.2.*
 
 
 library:

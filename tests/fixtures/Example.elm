@@ -1,7 +1,9 @@
-module Example exposing (AdventureTime(..))
+module Example exposing (AdventureTime(..), add)
 
 {-| --- | (• ◡•)| (❍ᴥ❍ʋ)
 -}
+
+import Task
 
 
 {-| Adventure time.

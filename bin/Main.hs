@@ -35,12 +35,13 @@ main = do
 -}
 formatFile :: [Char] -> IO ()
 formatFile filePath = do
-    contents <- readFile filePath
+    contents    <- readFile filePath
+    result      <- Proofread.proofread contents
 
     let prefix = Text.pack (filePath ++ " → ")
 
-    case traceShowId (Proofread.proofread contents) of
-        Ok result   -> putSuccess (prefix <> "✔")
+    case result of
+        Ok _        -> putSuccess (prefix <> "✔")
         Err err     -> putError (prefix <> "✘") >> putError err >> exitFailure
 
 
