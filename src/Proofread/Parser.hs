@@ -84,6 +84,7 @@ testInMultiLineComment :: Parser Test
 testInMultiLineComment = do
     _                   <- one (string " >>> ")
     startInput          <- someTill anyChar eol
+    parserState         <- getParserState
     additionalInput     <- maybeSome (try mlExtra)
     _                   <- maybeSome whitespace
     expectedOutput      <- manyTill anyChar (try mlEnd)
@@ -96,6 +97,7 @@ testInMultiLineComment = do
                 |> Text.pack
 
         , expectedOutput = Text.pack expectedOutput
+        , lineNumber = getLineNumber parserState
         , state = NotFulfilled
         }
 
@@ -112,3 +114,11 @@ mlExtra = do
 mlEnd :: Parser [Char]
 mlEnd =
     eol `andThen` maybeSome spaceCharacter `andThen` (eol `or` string "-}")
+
+
+getLineNumber :: Mega.State a -> Int
+getLineNumber state =
+    state
+        |> Mega.statePos
+        |> head
+        |> maybe 0 (Mega.sourceLine .> Mega.unPos)

@@ -1,6 +1,6 @@
 module Proofread.Types where
 
-import Protolude (Show, Text)
+import Protolude (Eq, Int, Show, Text)
 
 
 -- 🌳
@@ -22,23 +22,28 @@ data Result ok err
 data TestState
     = NotFulfilled
     | Equal
-    | Unequal
+    | Unequal Text
     | Error Text
 
 
 data Test = Test
     { input :: Text
     , expectedOutput :: Text
+    , lineNumber :: Int
     , state :: TestState
     }
 
 
 
--- SHOW
+-- INSTANCES
 
 
 deriving instance Show Document
 deriving instance Show TestState
 deriving instance Show Test
+
+deriving instance Eq Document
+deriving instance Eq TestState
+deriving instance Eq Test
 
 deriving instance (Show ok, Show err) => Show (Result ok err)

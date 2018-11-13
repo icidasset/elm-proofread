@@ -5,9 +5,7 @@ ELM PROOFREAD
 
 -}
 module Proofread
-    ( Document(..)
-    , Result(..)
-    , Test(..)
+    ( module Proofread.Types
     , proofread
     ) where
 
@@ -26,9 +24,5 @@ import qualified Proofread.Runner as Runner
 proofread :: Text -> IO (Result Document Text)
 proofread contents =
     case Parser.parse contents of
-        Ok document -> Runner.run document >>=
-                        (\doc -> do
-                            print (show doc :: [Char])
-                            return doc
-                        )
+        Ok document -> Runner.run document
         Err err     -> return (Err err)

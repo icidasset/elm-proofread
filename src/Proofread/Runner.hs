@@ -27,7 +27,7 @@ import qualified Data.Text.IO
 
 run :: Document -> IO (Result Document Text)
 run (Document moduleName tests) = do
-    let config = [ "repl" ]
+    let config = [ "repl", "--no-colors" ]
                     |> proc "elm"
                     |> setStdin createPipe
                     |> setStdout createPipe
@@ -63,8 +63,8 @@ run (Document moduleName tests) = do
 
     -- Determine result
     result <-
-        if Text.length err > 0 then
-            err
+        if Text.isInfixOf "-- UNKNOWN IMPORT --" err then
+            "Could not find an Elm project."
                 |> Err
                 |> return
         else
@@ -85,9 +85,8 @@ run (Document moduleName tests) = do
 
 
 fulfillTest :: Process Handle Handle Handle -> Test -> IO Test
-fulfillTest p (Test{ input, expectedOutput }) = do
-    let test = Test { input = input, expectedOutput = expectedOutput }
-    let equation = Text.concat [ "(==) (", input, ") (", expectedOutput, ")" ]
+fulfillTest p test = do
+    let equation = Text.concat [ "(==) (", input test, ") (", expectedOutput test, ")" ]
 
     -- Pass it to the Elm REPL
     Data.Text.IO.hPutStrLn (getStdin p) equation
@@ -101,17 +100,17 @@ fulfillTest p (Test{ input, expectedOutput }) = do
 
     -- Otherwise get actual output
     else do
-        line <- Data.Text.IO.hGetLine (getStdout p)
+        line    <- Data.Text.IO.hGetLine (getStdout p)
+        state   <- return (stateFromLine line)
 
-        line
-            |> Text.unpack
-            |> (parseMaybe outputParser)
-            |> map Text.pack
-            |> maybe
-                 (Error "Cannot parse REPL output")
-                 (\o -> if o == "True" then Equal else Unequal)
-            |> (\state -> test { state = state })
-            |> return
+        case state of
+            Unequal _ -> do
+                Data.Text.IO.hPutStrLn (getStdin p) (input test)
+                line <- Data.Text.IO.hGetLine (getStdout p)
+                return test { state = stateFromLine line }
+
+            _ ->
+                return test { state = state }
 
 
 fulfillTest _ test = return test
@@ -157,3 +156,14 @@ readFromHandle maybePrevious handle = do
     -- If no output
     else
         return (fromMaybe "" maybePrevious)
+
+
+stateFromLine :: Text -> TestState
+stateFromLine line =
+    line
+        |> Text.unpack
+        |> (parseMaybe outputParser)
+        |> map Text.pack
+        |> maybe
+             (Error "Cannot parse REPL output")
+             (\o -> if o == "True" then Equal else Unequal o)
