@@ -1,8 +1,11 @@
 __Elm Proofread.__  
 _This command-line tool runs your Elm documentation tests._
 
-Built for `Elm v0.19`.  
-This command assumes the Elm REPL can be run and can locate an `elm.json` file.
+Built for `Elm v0.19`,  
+still somewhat experimental.
+
+<small>This command assumes the Elm REPL  
+can be run and can locate an `elm.json` file.</small>
 
 
 ```shell
@@ -19,4 +22,5 @@ cat src/Main.elm | elm-proofread
 )
 ```
 
-_Note: The Elm REPL can locate an `elm.json` file if the current working-directory is a sub directory of the Elm project._
+<small>_Note: The Elm REPL can locate an elm.json file if  
+the current working-directory is a sub directory of the Elm project._</small>
