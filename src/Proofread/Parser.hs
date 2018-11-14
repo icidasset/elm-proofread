@@ -32,8 +32,8 @@ parse contents =
         success =
             Ok
 
-        failure =
-            parseErrorPretty .> Text.pack .> Text.append "Parse error: " .> Err
+        failure _ =
+            Err "Parse error, invalid Elm module."
     in
     contents
         |> Text.unpack

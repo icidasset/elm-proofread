@@ -24,5 +24,6 @@ import qualified Proofread.Runner as Runner
 proofread :: Text -> IO (Result Document Text)
 proofread contents =
     case Parser.parse contents of
-        Ok document -> Runner.run document
-        Err err     -> return (Err err)
+        Err err             -> return (Err err)
+        Ok (Document m [])  -> return (Ok <| Document m [])
+        Ok document         -> Runner.run document

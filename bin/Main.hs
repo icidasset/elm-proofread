@@ -24,46 +24,61 @@ main = do
 
     -- Format!
     case maybeFilePath of
-        Just filePath   -> formatFile filePath
-        Nothing         -> putErrorLn "Argument missing"
+        Just filePath   -> processFile filePath
+        Nothing         -> processStdin
 
 
 
 -- 📮
 
 
-{-| Format contents from a file.
+{-| Proofread a single file.
 -}
-formatFile :: [Char] -> IO ()
-formatFile filePath = do
+processFile :: [Char] -> IO ()
+processFile filePath = do
     putStrLn (Text.concat [ "Proofreading ", Text.pack filePath ])
 
     contents    <- readFile filePath
     result      <- Proofread.proofread contents
 
-    case result of
-        Ok (Document _ tests) -> do
-            tests
-                |> map renderTest
-                |> sequence
+    handleResult result
 
-            tests
-                |> map renderTestError
-                |> sequence
 
-            -- Did all tests pass?
-            let passedTests = filter (state .> (==) Equal) tests
+{-| Proofread stdin.
+-}
+processStdin :: IO ()
+processStdin = do
+    putStrLn ("Proofreading stdin" :: Text)
 
-            -- Render success message if appropiate
-            if length passedTests == length tests then
-                putSuccess ("\n\nAll tests passed!" :: Text)
+    contents    <- getContents
+    result      <- Proofread.proofread contents
 
-            -- Otherwise
-            else
-                putStr ("\n\n" :: Text)
+    handleResult result
 
-        Err err ->
-            putErrorLn err >> exitFailure
+
+{-|
+-}
+handleResult :: Result Document Text -> IO ()
+handleResult (Err err) = putErrorLn err >> exitFailure
+handleResult (Ok (Document _ tests)) = do
+    tests
+        |> map renderTest
+        |> sequence
+
+    tests
+        |> map renderTestError
+        |> sequence
+
+    -- Did all tests pass?
+    let passedTests = filter (state .> (==) Equal) tests
+
+    -- Render success message if appropiate
+    if length passedTests == length tests then
+        putSuccess ("\n\nAll tests passed!" :: Text) >> exitSuccess
+
+    -- Otherwise
+    else
+        putStr ("\n\n" :: Text) >> exitFailure
 
 
 

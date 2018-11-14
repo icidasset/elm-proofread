@@ -101,13 +101,13 @@ fulfillTest p test = do
     -- Otherwise get actual output
     else do
         line    <- Data.Text.IO.hGetLine (getStdout p)
-        state   <- return (stateFromLine line)
+        state   <- return (stateFromLine False line)
 
         case state of
             Unequal _ -> do
                 Data.Text.IO.hPutStrLn (getStdin p) (input test)
                 line <- Data.Text.IO.hGetLine (getStdout p)
-                return test { state = stateFromLine line }
+                return test { state = stateFromLine True line }
 
             _ ->
                 return test { state = state }
@@ -158,12 +158,12 @@ readFromHandle maybePrevious handle = do
         return (fromMaybe "" maybePrevious)
 
 
-stateFromLine :: Text -> TestState
-stateFromLine line =
+stateFromLine :: Bool -> Text -> TestState
+stateFromLine alwaysUnequal line =
     line
         |> Text.unpack
         |> (parseMaybe outputParser)
         |> map Text.pack
         |> maybe
              (Error "Cannot parse REPL output")
-             (\o -> if o == "True" then Equal else Unequal o)
+             (\o -> if not alwaysUnequal && o == "True" then Equal else Unequal o)
