@@ -86,7 +86,9 @@ run (Document moduleName tests) = do
 
 fulfillTest :: Process Handle Handle Handle -> Test -> IO Test
 fulfillTest p test = do
-    let equation = Text.concat [ "(==) (", input test, ") (", expectedOutput test, ")" ]
+    let inp         = Text.replace "\n" " " (input test)
+    let outp        = Text.replace "\n" " " (expectedOutput test)
+    let equation    = Text.concat [ "(==) (", inp, ") (", outp, ")" ]
 
     -- Pass it to the Elm REPL
     Data.Text.IO.hPutStrLn (getStdin p) equation
@@ -105,7 +107,7 @@ fulfillTest p test = do
 
         case state of
             Unequal _ -> do
-                Data.Text.IO.hPutStrLn (getStdin p) (input test)
+                Data.Text.IO.hPutStrLn (getStdin p) inp
                 line <- Data.Text.IO.hGetLine (getStdout p)
                 return test { state = stateFromLine True line }
 

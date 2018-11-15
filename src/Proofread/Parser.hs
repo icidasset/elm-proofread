@@ -82,7 +82,7 @@ test =
 -}
 testInMultiLineComment :: Parser Test
 testInMultiLineComment = do
-    _                   <- one (string " >>> ")
+    _                   <- one (string ">>> ")
     startInput          <- someTill anyChar eol
     parserState         <- getParserState
     additionalInput     <- maybeSome (try mlExtra)
@@ -92,7 +92,7 @@ testInMultiLineComment = do
     return $ Test
         { input =
             additionalInput
-                |> (<>) [ startInput, if length additionalInput > 0 then "\n" else "" ]
+                |> (<>) [ startInput ]
                 |> List.concat
                 |> Text.pack
 
@@ -108,7 +108,7 @@ mlExtra = do
     _                   <- one (string "..> ")
     input               <- manyTill anyChar eol
 
-    return input
+    return ('\n' : input)
 
 
 mlEnd :: Parser [Char]

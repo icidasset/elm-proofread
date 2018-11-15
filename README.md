@@ -1,6 +1,29 @@
 __Elm Proofread.__  
 _This command-line tool runs your Elm documentation tests._
 
+```elm
+module Example exposing (add)
+
+{-| Add two integers together.
+
+    >>> add 1 2
+    3
+
+    >>> 1.0
+    ..>     |> round
+    ..>     |> add 9
+    add
+        (round 5.0)
+        5
+
+-}
+add : Int -> Int -> Int
+add x y = x + y
+```
+
+
+### How to use
+
 ```shell
 # Proofread a single file
 elm-proofread src/Main.elm

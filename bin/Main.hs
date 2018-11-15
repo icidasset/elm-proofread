@@ -8,6 +8,7 @@ import Protolude hiding (state)
 import System.Console.Pretty
 import System.Environment (getArgs)
 
+import qualified Data.List as List
 import qualified Data.Text as Text
 import qualified Proofread
 
@@ -56,8 +57,10 @@ processStdin = do
     handleResult result
 
 
-{-|
--}
+
+-- 📮  ~  Generic
+
+
 handleResult :: Result Document Text -> IO ()
 handleResult (Err err) = putErrorLn err >> exitFailure
 handleResult (Ok (Document _ tests)) = do
@@ -124,13 +127,24 @@ renderTestError (Test { expectedOutput, input, lineNumber, state }) =
             return ()
 
         Unequal actualOutput ->
+            let
+                inputLines =
+                    Text.lines input
+
+                formattedInput =
+                    inputLines
+                        |> List.drop 1
+                        |> List.map (Text.append "    ")
+                        |> (++) (List.take 1 inputLines)
+                        |> Text.unlines
+            in
             [ "\n\n\n"
             , separator
             , "\n\n"
             , "The test found on line "
             , show lineNumber
             , " failed. You said\n\n\n    "
-            , input
+            , formattedInput
             , "\n\n\nwas going to be equal to\n\n\n    "
             , expectedOutput
             , "\n\n\nbut it isn't. Instead got\n\n\n    "

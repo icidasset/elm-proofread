@@ -1,9 +1,6 @@
 module Example exposing (AdventureTime(..), add)
 
-{-| --- | (• ◡•)| (❍ᴥ❍ʋ)
--}
-
-import Task
+import Dict
 
 
 {-| Adventure time.
@@ -21,6 +18,15 @@ type AdventureTime
 
     >>> add 1 2
     3
+
+    >>> 1.0
+    ..>     |> round
+    ..>     |> add 9
+    add
+        (round 5.0)
+        5
+
+    Hello ✌️
 
 -}
 add : number -> number -> number
