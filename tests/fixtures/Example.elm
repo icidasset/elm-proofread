@@ -31,4 +31,4 @@ type AdventureTime
 -}
 add : number -> number -> number
 add x y =
-    x + y
+    Debug.log "ignoreThis" (x + y)

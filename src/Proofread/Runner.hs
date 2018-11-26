@@ -18,6 +18,7 @@ import System.Process.Typed
 import Text.Megaparsec
 import Text.Megaparsec.Char
 
+import qualified Data.List as List
 import qualified Data.Text as Text
 import qualified Data.Text.IO
 
@@ -100,22 +101,30 @@ fulfillTest p test = do
     if Text.length err > 0 then
         return test { state = Error err }
 
-    -- Otherwise get actual output
-    else do
-        line    <- Data.Text.IO.hGetLine (getStdout p)
-        state   <- return (stateFromLine False line)
-
-        case state of
-            Unequal _ -> do
-                Data.Text.IO.hPutStrLn (getStdin p) inp
-                line <- Data.Text.IO.hGetLine (getStdout p)
-                return test { state = stateFromLine True line }
-
-            _ ->
-                return test { state = state }
+    -- Otherwise get output from stdout
+    else
+        getOutput p test inp
 
 
-fulfillTest _ test = return test
+getOutput :: Process Handle Handle Handle -> Test -> Text -> IO Test
+getOutput p test inp = do
+    line    <- Data.Text.IO.hGetLine (getStdout p)
+    state   <- return (stateFromLine False line)
+
+    case state of
+        Error _ ->
+            -- Ignore unparsable stuff (eg. debugging statements),
+            -- and move on to the next line.
+            getOutput p test inp
+
+        Unequal _ -> do
+            -- Execute the expected input and keep the result
+            Data.Text.IO.hPutStrLn (getStdin p) inp
+            line <- Data.Text.IO.hGetLine (getStdout p)
+            return test { state = stateFromLine True line }
+
+        _ ->
+            return test { state = state }
 
 
 
