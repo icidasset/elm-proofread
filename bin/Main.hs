@@ -107,6 +107,9 @@ renderTest (Test { input, state }) =
         NotFulfilled ->
             return ()
 
+        PrepareStatement ->
+            return ()
+
         Equal ->
             putStr ("." :: Text)
 
@@ -121,6 +124,9 @@ renderTestError :: Test -> IO ()
 renderTestError (Test { expectedOutput, input, lineNumber, state }) =
     case state of
         NotFulfilled ->
+            return ()
+
+        PrepareStatement ->
             return ()
 
         Equal ->

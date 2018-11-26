@@ -70,7 +70,7 @@ run (Document moduleName tests) = do
                 |> return
         else
             tests
-                |> map (fulfillTest p)
+                |> map (handleTest p)
                 |> sequence
                 |> map (Document moduleName .> Ok)
 
@@ -83,6 +83,37 @@ run (Document moduleName tests) = do
 
 
 -- FULFILL
+
+
+handleTest :: Process Handle Handle Handle -> Test -> IO Test
+handleTest p test =
+    let
+        expectedOutSize =
+            test
+                |> expectedOutput
+                |> Text.strip
+                |> Text.length
+    in
+    case expectedOutSize of
+
+        0 -> do
+            let statement = Text.replace "\n" " " (input test)
+
+            -- No expected output, so we assume the input is a preparing statement.
+            Data.Text.IO.hPutStrLn (getStdin p) statement
+
+            -- Possibly ignore next line
+            if Text.isPrefixOf "import" statement then
+                return ""
+            else
+                Data.Text.IO.hGetLine (getStdout p)
+
+            -- Return
+            return test { state = PrepareStatement }
+
+        _ ->
+            -- Normal test, carry on.
+            fulfillTest p test
 
 
 fulfillTest :: Process Handle Handle Handle -> Test -> IO Test

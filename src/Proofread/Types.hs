@@ -21,6 +21,7 @@ data Result ok err
 
 data TestState
     = NotFulfilled
+    | PrepareStatement
     | Equal
     | Unequal Text
     | Error Text

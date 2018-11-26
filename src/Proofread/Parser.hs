@@ -86,8 +86,8 @@ testInMultiLineComment = do
     startInput          <- someTill anyChar eol
     parserState         <- getParserState
     additionalInput     <- maybeSome (try mlExtra)
-    _                   <- maybeSome whitespace
-    expectedOutput      <- manyTill anyChar (try mlEnd)
+    _                   <- maybeSome spaceCharacter
+    expectedOutput      <- manyTill anyChar (try <| lookAhead <| prepEnd `or` mlEnd)
 
     return $ Test
         { input =
@@ -113,7 +113,12 @@ mlExtra = do
 
 mlEnd :: Parser [Char]
 mlEnd =
-    eol `andThen` maybeSome spaceCharacter `andThen` (eol `or` string "-}")
+    eol `andThen` maybeSome spaceCharacter `andThen` (eol `or` prepEnd)
+
+
+prepEnd :: Parser [Char]
+prepEnd =
+    string "-}" `or` string ">>> "
 
 
 getLineNumber :: Mega.State a -> Int
