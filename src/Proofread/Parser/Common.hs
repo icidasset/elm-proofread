@@ -1,4 +1,4 @@
-module Proofread.Parser.Utilities where
+module Proofread.Parser.Common where
 
 import Control.Applicative (Alternative, (<|>))
 import Prelude hiding (or)

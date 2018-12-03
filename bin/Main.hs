@@ -74,9 +74,10 @@ handleResult (Ok (Document _ tests)) = do
 
     -- Did all tests pass?
     let passedTests = filter (state .> (==) Equal) tests
+    let actualTests = filter (state .> (/=) PrepareStatement) tests
 
     -- Render success message if appropiate
-    if length passedTests == length tests then
+    if length passedTests == length actualTests then
         putSuccess ("\n\nAll tests passed!" :: Text) >> exitSuccess
 
     -- Otherwise

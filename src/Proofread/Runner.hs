@@ -6,19 +6,20 @@ RUNNER
 -}
 module Proofread.Runner where
 
-import Control.Concurrent
+import Control.Concurrent (forkIO, killThread, threadDelay)
+import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Monad.Combinators
 import Flow
+import Proofread.Parser.Common
 import Proofread.Parser.Types (Parser)
-import Proofread.Parser.Utilities
 import Proofread.Types
-import Protolude hiding (or, state)
-import System.IO
+import Protolude hiding (handle, moduleName, or, state)
+import System.IO hiding (print)
 import System.Process.Typed
+import System.Timeout (timeout)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 
-import qualified Data.List as List
 import qualified Data.Text as Text
 import qualified Data.Text.IO
 
@@ -47,9 +48,9 @@ run (Document moduleName tests) = do
     hSetBuffering (getStderr p) NoBuffering
 
     -- Ignore the first 3 lines
-    Data.Text.IO.hGetLine (getStdout p)
-    Data.Text.IO.hGetLine (getStdout p)
-    Data.Text.IO.hGetLine (getStdout p)
+    _ <- Data.Text.IO.hGetLine (getStdout p)
+    _ <- Data.Text.IO.hGetLine (getStdout p)
+    _ <- Data.Text.IO.hGetLine (getStdout p)
 
     -- Import Document module
     Data.Text.IO.hPutStrLn
@@ -60,7 +61,7 @@ run (Document moduleName tests) = do
     threadDelay (500 * 1000)
 
     -- Was the module imported successfully?
-    err <- readFromHandle Nothing (getStderr p)
+    err <- readFromHandle errorDetection (getStderr p)
 
     -- Determine result
     result <-
@@ -82,34 +83,27 @@ run (Document moduleName tests) = do
 
 
 
--- FULFILL
+-- SEGMENT
 
 
 handleTest :: Process Handle Handle Handle -> Test -> IO Test
 handleTest p test =
-    let
-        expectedOutSize =
-            test
-                |> expectedOutput
-                |> Text.strip
-                |> Text.length
-    in
-    case expectedOutSize of
+    case state test of
 
-        0 -> do
+        PrepareStatement -> do
             let statement = Text.replace "\n" " " (input test)
 
             -- No expected output, so we assume the input is a preparing statement.
             Data.Text.IO.hPutStrLn (getStdin p) statement
 
             -- Possibly ignore next line
-            if Text.isPrefixOf "import" statement then
+            _ <- if Text.isPrefixOf "import" statement then
                 return ""
             else
                 Data.Text.IO.hGetLine (getStdout p)
 
             -- Return
-            return test { state = PrepareStatement }
+            return test
 
         _ ->
             -- Normal test, carry on.
@@ -119,14 +113,14 @@ handleTest p test =
 fulfillTest :: Process Handle Handle Handle -> Test -> IO Test
 fulfillTest p test = do
     let inp         = Text.replace "\n" " " (input test)
-    let outp        = Text.replace "\n" " " (expectedOutput test)
+    let outp        = Text.replace "\n" " " (Text.replace "\n    " "\n" <| expectedOutput test)
     let equation    = Text.concat [ "(==) (", inp, ") (", outp, ")" ]
 
     -- Pass it to the Elm REPL
     Data.Text.IO.hPutStrLn (getStdin p) equation
 
     -- Read from stderr
-    err <- readFromHandle Nothing (getStderr p)
+    err <- readFromHandle errorDetection (getStderr p)
 
     -- Return error if present
     if Text.length err > 0 then
@@ -137,25 +131,132 @@ fulfillTest p test = do
         getOutput p test inp
 
 
+
+-- OUTPUT
+
+
 getOutput :: Process Handle Handle Handle -> Test -> Text -> IO Test
 getOutput p test inp = do
-    line    <- Data.Text.IO.hGetLine (getStdout p)
-    state   <- return (stateFromLine False line)
+    lines   <- readFromHandle inputDetection (getStdout p)
+    state   <- return (deriveState False lines)
 
     case state of
-        Error _ ->
-            -- Ignore unparsable stuff (eg. debugging statements),
-            -- and move on to the next line.
-            getOutput p test inp
-
         Unequal _ -> do
             -- Execute the expected input and keep the result
             Data.Text.IO.hPutStrLn (getStdin p) inp
-            line <- Data.Text.IO.hGetLine (getStdout p)
-            return test { state = stateFromLine True line }
+            lines_ <- readFromHandle inputDetection (getStdout p)
+            return test { state = deriveState True lines_ }
 
         _ ->
             return test { state = state }
+
+
+deriveState :: Bool -> Text -> TestState
+deriveState alwaysUnequal lines =
+    maybe
+        (Error "Cannot parse REPL output")
+        (\o -> if alwaysUnequal || o /= "True" then Unequal o else Equal)
+        (lines
+            |> Text.replace "\n    : " " : "
+            |> Text.lines
+            |> lastMay
+            |> fromMaybe ""
+            |> parseOutput
+        )
+
+
+outputParser :: Parser [Char]
+outputParser = do
+    _ <- maybeSome (string "> ") -- ignore these
+    manyTill anyChar (string " : " `andThen` manyTill anyChar eof)
+
+
+parseOutput :: Text -> Maybe Text
+parseOutput line =
+    line
+        |> Text.unpack
+        |> (parseMaybe outputParser)
+        |> map Text.pack
+
+
+
+-- READING (GENERIC)
+
+
+readFromHandle :: (Detector, Options) -> Handle -> IO Text
+readFromHandle =
+    readFromHandle_ Nothing
+
+
+readFromHandle_ :: Maybe Text -> (Detector, Options) -> Handle -> IO Text
+readFromHandle_  maybeAccumulated (lastLineDetector, options) handle = do
+    let rounds      = checkingRounds options
+    let fraction    = (timeToWait options * 1000) / rounds
+
+    -- Get the line from the handle in a new thread
+    mVar        <- newEmptyMVar
+    tId         <- forkIO (Data.Text.IO.hGetLine handle >>= putMVar mVar)
+
+    -- Check every x milliseconds if we have the line yet
+    let loop = \n -> do
+                   result <- timeout (round fraction) (takeMVar mVar)
+
+                   case result of
+                       Nothing -> if n < rounds then loop (n + 1) else return ""
+                       Just l  -> return l
+
+    -- Start loop
+    line <- loop 1
+
+    -- Kill thread when done
+    killThread tId
+
+    -- Moving on,
+    -- either continue or stop.
+    if line == "" then
+        return (fromMaybe "" maybeAccumulated)
+
+    else
+        concatReadings
+            (if lastLineDetector line then
+                return
+            else
+                \r -> readFromHandle_ (Just r) (lastLineDetector, options) handle
+            )
+            maybeAccumulated
+            line
+
+
+concatReadings :: (Text -> IO Text) -> Maybe Text -> Text -> IO Text
+concatReadings c m line =
+    case m of
+        Just accumulated ->
+            c <| Text.concat [ accumulated, "\n", line ]
+
+        Nothing ->
+            c <| line
+
+
+
+-- (LAST LINE) DETECTORS
+
+
+type Detector = Text -> Bool
+data Options = Options { checkingRounds :: Float, timeToWait :: Float }
+
+
+errorDetection :: (Detector, Options)
+errorDetection =
+    ( \_ -> False
+    , Options { checkingRounds = 10, timeToWait = 500 }
+    )
+
+
+inputDetection :: (Detector, Options)
+inputDetection =
+    ( parseOutput .> isJust
+    , Options { checkingRounds = 20, timeToWait = 2500 }
+    )
 
 
 
@@ -171,41 +272,3 @@ closeUpShop p = do
     stopProcess p
 
     return ()
-
-
-outputParser :: Parser [Char]
-outputParser = do
-    maybeSome (string "> ") -- ignore these
-    manyTill anyChar (string " : " `andThen` manyTill anyChar eof)
-
-
-readFromHandle :: Maybe Text -> Handle -> IO Text
-readFromHandle maybePrevious handle = do
-    -- Wait 750 ms at most for initial output,
-    -- but no longer than 125 ms for following output.
-    let waitTime = if isNothing maybePrevious then 750 else 125
-
-    ready <- hWaitForInput handle waitTime
-
-    -- If output is available
-    if ready then do
-        line <- Data.Text.IO.hGetLine handle
-
-        case maybePrevious of
-            Just previous   -> readFromHandle (Just <| Text.concat [ previous, "\n", line ]) handle
-            Nothing         -> readFromHandle (Just <| line) handle
-
-    -- If no output
-    else
-        return (fromMaybe "" maybePrevious)
-
-
-stateFromLine :: Bool -> Text -> TestState
-stateFromLine alwaysUnequal line =
-    line
-        |> Text.unpack
-        |> (parseMaybe outputParser)
-        |> map Text.pack
-        |> maybe
-             (Error "Cannot parse REPL output")
-             (\o -> if not alwaysUnequal && o == "True" then Equal else Unequal o)

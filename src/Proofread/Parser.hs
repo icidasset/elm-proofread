@@ -11,10 +11,10 @@ module Proofread.Parser
 import Control.Monad.Combinators
 import Data.Text (Text)
 import Flow
+import Proofread.Parser.Common
 import Proofread.Parser.Types
-import Proofread.Parser.Utilities
 import Proofread.Types
-import Protolude hiding (and, one, or, some, try)
+import Protolude hiding (and, moduleName, one, or, some, state, try)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 
@@ -29,16 +29,16 @@ import qualified Text.Megaparsec as Mega
 parse :: Text -> Result Document Text
 parse contents =
     let
-        success =
+        ok =
             Ok
 
-        failure _ =
+        err _ =
             Err "Parse error, invalid Elm module."
     in
     contents
         |> Text.unpack
-        |> Mega.parse document ""
-        |> either failure success
+        |> Mega.parse document []
+        |> either err ok
 
 
 
@@ -96,9 +96,14 @@ testInMultiLineComment = do
                 |> List.concat
                 |> Text.pack
 
-        , expectedOutput = Text.pack expectedOutput
-        , lineNumber = getLineNumber parserState
-        , state = NotFulfilled
+        , state =
+            if (Text.pack .> Text.strip) expectedOutput == "" then
+                PrepareStatement
+            else
+                NotFulfilled
+
+        , expectedOutput    = Text.pack expectedOutput
+        , lineNumber        = getLineNumber parserState
         }
 
 
