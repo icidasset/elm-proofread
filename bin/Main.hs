@@ -64,13 +64,20 @@ processStdin = do
 handleResult :: Result Document Text -> IO ()
 handleResult (Err err) = putErrorLn err >> exitFailure
 handleResult (Ok (Document _ tests)) = do
-    tests
+    _ <- tests
         |> map renderTest
         |> sequence
 
-    tests
-        |> map renderTestError
-        |> sequence
+    -- Render first error, hide others
+    -- Does nothing if no errors are present
+    _ <- tests
+        |> List.find
+            (\t ->
+                case state t of
+                    Error _ -> True
+                    _       -> False
+            )
+        |> maybe (return ()) renderTestError
 
     -- Did all tests pass?
     let passedTests = filter (state .> (==) Equal) tests
@@ -103,7 +110,7 @@ excludeFlag _ = True
 
 
 renderTest :: Test -> IO ()
-renderTest (Test { input, state }) =
+renderTest (Test { state }) =
     case state of
         NotFulfilled ->
             return ()

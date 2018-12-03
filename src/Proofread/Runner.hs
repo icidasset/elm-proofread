@@ -202,29 +202,31 @@ readFromHandle_  maybeAccumulated (lastLineDetector, options) handle = do
                    result <- timeout (round fraction) (takeMVar mVar)
 
                    case result of
-                       Nothing -> if n < rounds then loop (n + 1) else return ""
-                       Just l  -> return l
+                       Nothing -> if n < rounds then loop (n + 1) else return Nothing
+                       Just l  -> return (Just l)
 
     -- Start loop
-    line <- loop 1
+    maybeLine <- loop 1
 
     -- Kill thread when done
     killThread tId
 
     -- Moving on,
     -- either continue or stop.
-    if line == "" then
-        return (fromMaybe "" maybeAccumulated)
+    case maybeLine of
 
-    else
-        concatReadings
-            (if lastLineDetector line then
-                return
-            else
-                \r -> readFromHandle_ (Just r) (lastLineDetector, options) handle
-            )
-            maybeAccumulated
-            line
+        Just line ->
+            concatReadings
+                (if lastLineDetector line then
+                    return
+                else
+                    \r -> readFromHandle_ (Just r) (lastLineDetector, options) handle
+                )
+                maybeAccumulated
+                line
+
+        Nothing ->
+            return (fromMaybe "" maybeAccumulated)
 
 
 concatReadings :: (Text -> IO Text) -> Maybe Text -> Text -> IO Text
