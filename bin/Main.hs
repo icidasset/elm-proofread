@@ -74,8 +74,9 @@ handleResult (Ok (Document _ tests)) = do
         |> List.find
             (\t ->
                 case state t of
-                    Error _ -> True
-                    _       -> False
+                    Error _     -> True
+                    Unequal _   -> True
+                    _           -> False
             )
         |> maybe (return ()) renderTestError
 
