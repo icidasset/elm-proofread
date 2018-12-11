@@ -69,6 +69,12 @@ run (Document moduleName tests) = do
             "Could not find an Elm project."
                 |> Err
                 |> return
+
+        else if Text.isPrefixOf "-- " err then
+            [ "\n", err ]
+                |> Text.concat
+                |> Err
+                |> return
         else
             tests
                 |> map (handleTest p)
