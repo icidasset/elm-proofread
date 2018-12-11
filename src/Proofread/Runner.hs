@@ -96,11 +96,11 @@ handleTest p test =
             -- No expected output, so we assume the input is a preparing statement.
             Data.Text.IO.hPutStrLn (getStdin p) statement
 
-            -- Possibly ignore next line
+            -- Possibly ignore next lines
             _ <- if Text.isPrefixOf "import" statement then
                 return ""
             else
-                Data.Text.IO.hGetLine (getStdout p)
+                readFromHandle inputDetection (getStdout p)
 
             -- Return
             return test
