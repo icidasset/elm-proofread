@@ -263,7 +263,7 @@ errorDetection =
 inputDetection :: (Detector, Options)
 inputDetection =
     ( parseOutput .> isJust
-    , Options { checkingRounds = 20, timeToWait = 2500 }
+    , Options { checkingRounds = 20 * 20, timeToWait = 2500 * 20 }
     )
 
 
