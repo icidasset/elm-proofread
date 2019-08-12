@@ -48,10 +48,11 @@ This command assumes the Elm REPL can be run and can locate an `elm.json` file.
 
 ### How to install
 
-Option 1, using [Haskell Stack](https://www.haskellstack.org/).
+- Option 1, use one of the prebuilt binaries available on the [releases page](releases).
+- Option 2, use [Haskell Stack](https://www.haskellstack.org/).
 
-```shell
-git clone git@github.com:icidasset/elm-proofread.git
-cd elm-proofread
-stack install
-```
+  ```shell
+  git clone git@github.com:icidasset/elm-proofread.git
+  cd elm-proofread
+  stack install
+  ```

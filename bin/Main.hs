@@ -10,7 +10,6 @@ import System.Environment (getArgs)
 
 import qualified Data.List as List
 import qualified Data.Text as Text
-import qualified Proofread
 
 
 -- 🍯

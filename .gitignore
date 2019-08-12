@@ -1,3 +1,5 @@
-/.stack-work
 /*.cabal
+/.stack-work
+/dist
+.DS_Store
 elm-stuff

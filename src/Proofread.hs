@@ -13,7 +13,6 @@ import Flow
 import Proofread.Types
 import Protolude
 
-import qualified Data.Text as Text
 import qualified Proofread.Parser as Parser
 import qualified Proofread.Runner as Runner
 
