@@ -1,5 +1,5 @@
 name: elm-proofread
-version: 0.1.1
+version: 0.2.0
 synopsis: Elm documentation testing.
 description: See README at <https://github.com/icidasset/elm-proofread#readme>
 maintainer: Steven Vandevelde <icid.asset@gmail.com>

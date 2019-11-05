@@ -16,4 +16,4 @@ COPY elm-proofread.cabal .
 RUN cabal new-update
 RUN cabal new-configure --disable-executable-dynamic --ghc-option=-optl=-static --ghc-option=-optl=-pthread
 RUN cabal new-build
-RUN strip -s ./dist-newstyle/build/x86_64-linux/ghc-8.4.3/elm-proofread-0.1.1/x/elm-proofread/build/elm-proofread/elm-proofread
+RUN strip -s ./dist-newstyle/build/x86_64-linux/ghc-8.4.3/elm-proofread-0.2.0/x/elm-proofread/build/elm-proofread/elm-proofread
