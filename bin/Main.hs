@@ -23,7 +23,9 @@ data Flags = Flags
 
 
 flagsConfig = Flags
-    { filePath = Nothing &= args &= typFile
+    { filePath = Nothing
+        &= args
+        &= typFile
 
     --
     , showAllErrors = False
@@ -32,9 +34,16 @@ flagsConfig = Flags
         &= help "Show all errors instead of one"
     }
 
+    -- Details
+    ----------
+    &= details [
+        "Provide a path to an Elm file to proofread it, or omit it to use STDIN."
+    ]
+
     -- Summary
     ----------
-    &= summary "\nProofread your Elm files.\n\
+    &= summary "elm-proofread v0.2.0\n\n\
+               \Proofread your Elm files.\n\
                \See https://github.com/icidasset/elm-proofread for examples."
 
     -- Program
