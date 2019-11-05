@@ -1,7 +1,7 @@
-all: make-static-binaries
+all: static-binaries
 
 
-make-static-binaries:
+static-binaries:
 	rm -rf dist
 	mkdir -p dist/mac
 	mkdir -p dist/linux
@@ -12,7 +12,7 @@ make-static-binaries:
 
 	# Linux
 	docker build -t bin .
-	docker cp $$(docker create bin):/tmp/dist-newstyle/build/x86_64-linux/ghc-8.4.3/elm-proofread-0.1.0/x/elm-proofread/build/elm-proofread/elm-proofread ./dist/linux/
+	docker cp $$(docker create bin):/tmp/dist-newstyle/build/x86_64-linux/ghc-8.4.3/elm-proofread-0.1.1/x/elm-proofread/build/elm-proofread/elm-proofread ./dist/linux/
 	chmod +x ./dist/linux/elm-proofread
 	docker system prune -a
 
