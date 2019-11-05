@@ -9,6 +9,7 @@ category: Development
 
 
 default-extensions:
+  DeriveDataTypeable
   DisambiguateRecordFields
   DuplicateRecordFields
   NamedFieldPuns
@@ -24,10 +25,12 @@ ghc-options:
   -Wincomplete-record-updates
   -Wincomplete-uni-patterns
   -Wredundant-constraints
+  -fno-cse
 
 
 dependencies:
   - base >= 4.7 && < 5
+  - cmdargs == 0.10.*
   - flow == 1.*
   - megaparsec == 6.5.*
   - parser-combinators == 1.*

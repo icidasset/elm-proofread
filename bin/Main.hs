@@ -6,10 +6,41 @@ import Flow
 import Proofread
 import Protolude hiding (state)
 import System.Console.Pretty
-import System.Environment (getArgs)
+import System.Console.CmdArgs
 
 import qualified Data.List as List
 import qualified Data.Text as Text
+
+
+-- 🌳
+
+
+data Flags = Flags
+    { filePath :: Maybe [Char]
+    , showAllErrors :: Bool
+    }
+    deriving (Data, Show, Typeable)
+
+
+flagsConfig = Flags
+    { filePath = Nothing &= args &= typFile
+
+    --
+    , showAllErrors = False
+        &= name "all-errors"
+        &= explicit
+        &= help "Show all errors instead of one"
+    }
+
+    -- Summary
+    ----------
+    &= summary "\nProofread your Elm files.\n\
+               \See https://github.com/icidasset/elm-proofread for examples."
+
+    -- Program
+    ----------
+    &= program "elm-proofread"
+
 
 
 -- 🍯
@@ -17,15 +48,12 @@ import qualified Data.Text as Text
 
 main :: IO ()
 main = do
-    args <- getArgs
+    flags <- cmdArgs flagsConfig
 
-    -- Fun w/ flags
-    let maybeFilePath = listToMaybe (excludeFlags args)
-
-    -- Format!
-    case maybeFilePath of
-        Just filePath   -> processFile filePath
-        Nothing         -> processStdin
+    -- Proofread!
+    case filePath flags of
+        Just filePath   -> processFile filePath flags
+        Nothing         -> processStdin flags
 
 
 
@@ -34,50 +62,58 @@ main = do
 
 {-| Proofread a single file.
 -}
-processFile :: [Char] -> IO ()
-processFile filePath = do
+processFile :: [Char] -> Flags -> IO ()
+processFile filePath flags = do
     putStrLn (Text.concat [ "Proofreading ", Text.pack filePath ])
 
     contents    <- readFile filePath
     result      <- Proofread.proofread contents
 
-    handleResult result
+    handleResult result flags
 
 
 {-| Proofread stdin.
 -}
-processStdin :: IO ()
-processStdin = do
+processStdin :: Flags -> IO ()
+processStdin flags = do
     putStrLn ("Proofreading stdin" :: Text)
 
     contents    <- getContents
     result      <- Proofread.proofread contents
 
-    handleResult result
+    handleResult result flags
 
 
 
 -- 📮  ~  Generic
 
 
-handleResult :: Result Document Text -> IO ()
-handleResult (Err err) = putErrorLn err >> exitFailure
-handleResult (Ok (Document _ tests)) = do
+handleResult :: Result Document Text -> Flags -> IO ()
+handleResult (Err err) _ = putErrorLn err >> exitFailure
+handleResult (Ok (Document _ tests)) flags = do
     _ <- tests
         |> map renderTest
         |> sequence
 
-    -- Render first error, hide others
+    -- Render first error, hide others (unless all-errors flag is provided)
     -- Does nothing if no errors are present
     _ <- tests
-        |> List.find
+        |> List.filter
             (\t ->
                 case state t of
                     Error _     -> True
                     Unequal _   -> True
                     _           -> False
             )
-        |> maybe (return ()) renderTestError
+        |> (
+            if showAllErrors flags then
+                identity
+
+            else
+                List.take 1
+        )
+        |> map renderTestError
+        |> sequence
 
     -- Did all tests pass?
     let passedTests = filter (state .> (==) Equal) tests
