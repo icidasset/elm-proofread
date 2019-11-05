@@ -42,7 +42,7 @@ cat src/Main.elm | elm-proofread
 )
 ```
 
-Built for `Elm v0.19`, slightly experimental.  
+Built for `Elm v0.19`.  
 This command assumes the Elm REPL can be run and can locate an `elm.json` file.
 
 
