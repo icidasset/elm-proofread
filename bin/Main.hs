@@ -129,19 +129,6 @@ handleResult (Ok (Document _ tests)) flags = do
 
 
 
--- ⛳️
-
-
-excludeFlags :: [[Char]] -> [[Char]]
-excludeFlags = filter excludeFlag
-
-
-excludeFlag :: [Char] -> Bool
-excludeFlag ('-' : _) = False
-excludeFlag _ = True
-
-
-
 -- ⚗️
 
 
