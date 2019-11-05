@@ -63,7 +63,7 @@ docModule :: Parser Text
 docModule = do
     _                   <- one (string "module ")
     moduleName          <- some (alphaNumChar `or` char '.' `or` char '_')
-    _                   <- one spaceCharacter
+    _                   <- some whitespace
     _                   <- manyTill anyChar (string "\n\n")
 
     return $ Text.pack moduleName
