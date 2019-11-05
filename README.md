@@ -38,7 +38,7 @@ cat src/Main.elm | elm-proofread
 # Go to a directory, find all the Elm files and proofread all of them until one fails
 ( cd elm-project && \
   find . -name "*.elm" -print0 | \
-  xargs -0 -n 1 sh -c 'elm-proofread -- $0 || exit 255; echo "\n\n"'
+  xargs -0 -n 1 -I % sh -c 'elm-proofread -- % || exit 255; echo "\n\n"' \
 )
 ```
 
