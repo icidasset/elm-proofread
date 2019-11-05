@@ -48,6 +48,8 @@ parse contents =
 document :: Parser Document
 document = do
     _                   <- maybeSome whitespace
+    _                   <- optional (string "port")
+    _                   <- maybeSome whitespace
     m                   <- one docModule
     _                   <- maybeSome whitespace
     t                   <- maybeSome test
